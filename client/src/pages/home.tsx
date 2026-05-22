@@ -11,6 +11,8 @@ import CompareVersionsDialog from "@/components/CompareVersionsDialog";
 import VersionCharts from "@/components/VersionCharts";
 import EvolutionChainsDialog from "@/components/EvolutionChainsDialog";
 import UpgradeImpactBanner from "@/components/UpgradeImpactBanner";
+import ExportMenu from "@/components/ExportMenu";
+import LearningPathsDialog from "@/components/LearningPathsDialog";
 import type { Feature } from "@/components/FeatureCard";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -181,6 +183,20 @@ export default function HomePage() {
         onHeatmapCellClick={handleHeatmapCellClick}
         onColumnHeaderClick={(versionId) => openCompare("", versionId)}
         compareRange={compareFromId && compareToId ? { fromId: compareFromId, toId: compareToId } : undefined}
+      />
+      <LearningPathsDialog
+        versions={versions || []}
+        onNavigateToVersion={handleVersionNavigate}
+        onAskInChat={handleAskInChat}
+        onClearFilters={() => {
+          setSelectedCategories([]);
+          setVersionFrom(null);
+          setVersionTo(null);
+        }}
+      />
+      <ExportMenu
+        versions={filteredVersions}
+        totalCount={filteredVersions.reduce((sum, v) => sum + v.features.length, 0)}
       />
     </div>
   );
