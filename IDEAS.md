@@ -81,3 +81,51 @@ Each is a standalone visualisation that explains one concept end-to-end.
 ## Conclusion
 
 The timeline foundation is solid. The next high-leverage moves are (a) the small AI-prompt button variations, (b) the feature timeline graph, and (c) at least one polished interactive diagram to prove the pattern before investing in the rest.
+
+---
+
+## Addendum — p5.js Interactive Diagrams Concept (May 2026)
+
+A second round of ideas focused on **p5.js sketches**, **"Takeaway" summaries**, **"Try It Yourself"** exercises, and a **tabbed interface** that promotes diagrams to a first-class section of the app.
+
+### Proposed top-level tab structure
+`Timeline` · `Interactive Diagrams` · `Learning Paths` · `AI Assistant` · `Version Compare`
+
+The Diagrams tab would be a gallery of p5.js sketches, each opening as a focused module with instructions, controls, takeaway, and next-step links.
+
+### p5.js diagram sketches
+
+- **[big]** **2D Meshing Evolution Slider** — scrub a timeline slider; canvas redraws the same area as a coarse grid (v2011) → adaptive grid (v2015) → subgrid mesh (v2027). Mouse hover on the modern mesh highlights subgrid elements (porous walls, infiltration zones).
+- **[big]** **Roughness Zone Priority Editor** — interactive: click to add zones, drag to move, set radius/roughness/priority. Click any point to sample the effective roughness resolved by priority. Real-time numerical readout.
+- **[big]** **Database Architecture Comparator** — toggle on-premise vs cloud. Animated data packets flow between servers/clients/API gateway. Click any node to expand auth/encryption details.
+- **[big]** **Design Rainfall Generator** — sliders for return period, duration, timestep + method dropdown (FEH2013 / NOAA Atlas 14 / Euler Type II). Live hyetograph, total depth, peak intensity, and a comparison table of methods.
+- **[big]** **Pump Station Configurator** — drag points on the pump curve; system curve is computed live; operating-point intersection is rendered with flow/head/efficiency readout. Lets a user *feel* what pump-curve changes do.
+
+### "Takeaway" summary system
+Every feature card (and every diagram) gets a one-line "why this matters" written in plain language. Example:
+> **Subgrid Sampling (v2027.0)** — More accurate flood depths around buildings without huge models.
+
+- **[next]** Add a `takeaway?: string` field to the `Feature` schema and surface it on the FeatureCard as a highlighted callout. Author 50–100 of the highest-value takeaways manually; AI-draft the rest with human review.
+
+### "Try It Yourself" exercise pattern
+Each interactive diagram is wrapped in a 5-part shell:
+1. **Instructions** — clear goal and steps
+2. **Interactive controls** — sliders, drag handles, dropdowns
+3. **Immediate feedback** — live visuals + numerical results
+4. **Save/Share** — export configuration as JSON or shareable URL
+5. **Next steps** — links to the related ICM documentation and feature cards
+
+### Implementation notes
+- Add `p5` as a frontend dependency. Wrap each sketch in a React component using a `useRef`-attached canvas container and a `useEffect` that instantiates `new p5(sketch, ref.current)` and tears it down on unmount.
+- Keep each diagram in its own file under `client/src/components/diagrams/` (e.g. `MeshingEvolution.tsx`, `RoughnessZoneEditor.tsx`).
+- A gallery page (`client/src/pages/diagrams.tsx`) renders preview cards with thumbnail + title + blurb, and routes to per-diagram pages via wouter.
+- Mobile: use horizontally scrollable tab nav; sketches should detect `windowWidth < 768` and downscale.
+- "Save/Share" can be implemented client-side using URL-encoded state (no backend needed).
+- Tab promotion (Diagrams as a sibling of Timeline) should wait until at least 2 polished sketches exist — otherwise the tab feels empty.
+
+### Recommended sequencing
+1. Add `p5` dependency and build the **Roughness Zone Priority Editor** first — it's bounded, doesn't need authored per-version data, and demonstrates the full pattern (canvas + controls + readout + takeaway).
+2. Once the pattern is validated, add the **Design Rainfall Generator** (synthetic data is fine).
+3. Then the heavier authored-content diagrams (Meshing Evolution, Database Architecture).
+4. Promote Diagrams to a top-level tab once ≥2 sketches ship.
+5. Layer in the takeaway-summary field and "Save/Share" URL encoder in parallel.
