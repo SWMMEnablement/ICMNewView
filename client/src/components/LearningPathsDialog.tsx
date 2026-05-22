@@ -14,7 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { GraduationCap, Cloud, ArrowUpCircle, Sparkles, ChevronRight } from "lucide-react";
 import type { Version } from "@shared/schema";
 
-interface LearningPathsDialogProps {
+interface CommonProps {
   versions: Version[];
   onNavigateToVersion: (versionId: string) => void;
   onAskInChat?: (message: string) => void;
@@ -37,11 +37,8 @@ interface Path {
   steps: PathStep[];
 }
 
-export default function LearningPathsDialog({ versions, onNavigateToVersion, onAskInChat, onClearFilters }: LearningPathsDialogProps) {
-  const [open, setOpen] = useState(false);
-  const [activePath, setActivePath] = useState<string | null>(null);
-
-  const paths: Path[] = useMemo(() => {
+function usePaths(versions: Version[]): Path[] {
+  return useMemo(() => {
     const find = (v: string) => versions.find((x) => x.version === v)?.id;
     return [
       {
@@ -85,22 +82,95 @@ export default function LearningPathsDialog({ versions, onNavigateToVersion, onA
       },
     ];
   }, [versions]);
+}
 
+export function LearningPathsView({ versions, onNavigateToVersion, onAskInChat, onClearFilters, onAction }: CommonProps & { onAction?: () => void }) {
+  const paths = usePaths(versions);
+  const [activePath, setActivePath] = useState<string | null>(null);
   const current = paths.find((p) => p.id === activePath);
 
   const handleStep = (step: PathStep) => {
     if (step.versionId) {
       onClearFilters?.();
-      setOpen(false);
+      onAction?.();
       setTimeout(() => onNavigateToVersion(step.versionId!), 100);
     } else if (step.question && onAskInChat) {
       onAskInChat(step.question);
-      setOpen(false);
+      onAction?.();
     }
   };
 
+  if (!current) {
+    return (
+      <div className="grid gap-3">
+        {paths.map((p) => {
+          const Icon = p.icon;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => setActivePath(p.id)}
+              className="text-left w-full"
+              data-testid={`path-${p.id}`}
+            >
+              <Card className="hover-elevate active-elevate-2">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-3">
+                    <div className={`h-9 w-9 rounded-md flex items-center justify-center ${p.color}`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <CardTitle className="text-base">{p.title}</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">{p.blurb}</p>
+                  <div className="mt-2 text-xs text-muted-foreground">{p.steps.length} steps</div>
+                </CardContent>
+              </Card>
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setActivePath(null); }}>
+    <div className="space-y-3">
+      <Button variant="ghost" size="sm" onClick={() => setActivePath(null)} data-testid="button-back-paths">
+        ← All paths
+      </Button>
+      <div>
+        <h3 className="text-lg font-semibold">{current.title}</h3>
+        <p className="text-sm text-muted-foreground">{current.blurb}</p>
+      </div>
+      {current.steps.map((step, i) => (
+        <button
+          key={i}
+          type="button"
+          onClick={() => handleStep(step)}
+          className="text-left w-full"
+          data-testid={`step-${current.id}-${i}`}
+        >
+          <Card className="hover-elevate active-elevate-2">
+            <CardContent className="py-3 flex items-center gap-3">
+              <Badge variant="outline" className="font-mono">{i + 1}</Badge>
+              <div className="flex-1">
+                <div className="font-medium text-sm">{step.title}</div>
+                <div className="text-xs text-muted-foreground">{step.detail}</div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </CardContent>
+          </Card>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export default function LearningPathsDialog(props: CommonProps) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2" data-testid="button-learning-paths">
           <GraduationCap className="h-4 w-4" />
@@ -111,71 +181,14 @@ export default function LearningPathsDialog({ versions, onNavigateToVersion, onA
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <GraduationCap className="h-5 w-5" />
-            {current ? current.title : "Learning Paths"}
+            Learning Paths
           </DialogTitle>
           <DialogDescription>
-            {current ? current.blurb : "Guided tours through the most important parts of ICM InfoWorks."}
+            Guided tours through the most important parts of ICM InfoWorks.
           </DialogDescription>
         </DialogHeader>
-
         <ScrollArea className="max-h-[60vh] pr-3">
-          {!current ? (
-            <div className="grid gap-3">
-              {paths.map((p) => {
-                const Icon = p.icon;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setActivePath(p.id)}
-                    className="text-left w-full"
-                    data-testid={`path-${p.id}`}
-                  >
-                    <Card className="hover-elevate active-elevate-2">
-                      <CardHeader className="pb-2">
-                        <div className="flex items-center gap-3">
-                          <div className={`h-9 w-9 rounded-md flex items-center justify-center ${p.color}`}>
-                            <Icon className="h-5 w-5" />
-                          </div>
-                          <CardTitle className="text-base">{p.title}</CardTitle>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">{p.blurb}</p>
-                        <div className="mt-2 text-xs text-muted-foreground">{p.steps.length} steps</div>
-                      </CardContent>
-                    </Card>
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <Button variant="ghost" size="sm" onClick={() => setActivePath(null)} data-testid="button-back-paths">
-                ← All paths
-              </Button>
-              {current.steps.map((step, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => handleStep(step)}
-                  className="text-left w-full"
-                  data-testid={`step-${current.id}-${i}`}
-                >
-                  <Card className="hover-elevate active-elevate-2">
-                    <CardContent className="py-3 flex items-center gap-3">
-                      <Badge variant="outline" className="font-mono">{i + 1}</Badge>
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{step.title}</div>
-                        <div className="text-xs text-muted-foreground">{step.detail}</div>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </CardContent>
-                  </Card>
-                </button>
-              ))}
-            </div>
-          )}
+          <LearningPathsView {...props} onAction={() => setOpen(false)} />
         </ScrollArea>
       </DialogContent>
     </Dialog>
