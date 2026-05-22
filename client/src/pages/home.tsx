@@ -276,7 +276,7 @@ export default function HomePage() {
       />
 
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TabId)} className="flex-1 flex flex-col overflow-hidden">
-        <TabsList className="w-full rounded-none border-b justify-start h-auto p-0 flex-wrap">
+        <TabsList className="w-full rounded-none border-b justify-start h-auto p-0 overflow-x-auto flex-nowrap md:flex-wrap">
           <TabsTrigger value="timeline" aria-label="Timeline" className="gap-2 py-3 px-4 rounded-none data-[state=active]:border-b-2 data-[state=active]:border-primary" data-testid="tab-timeline">
             <Clock className="h-4 w-4" />
             <span className="hidden sm:inline">Timeline</span>

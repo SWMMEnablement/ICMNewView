@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Play } from "lucide-react";
+import { ExternalLink, Play, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface Feature {
@@ -11,6 +11,7 @@ export interface Feature {
   category: string;
   hasVideo?: boolean;
   documentationUrl?: string;
+  takeaway?: string;
   version: string;
   releaseDate: string;
 }
@@ -59,6 +60,15 @@ export default function FeatureCard({ feature, onClick }: FeatureCardProps) {
         <p className="text-sm text-muted-foreground line-clamp-3">
           {feature.description}
         </p>
+        {feature.takeaway && (
+          <div className="flex gap-2 rounded-md bg-amber-500/10 border border-amber-500/20 p-2.5 text-xs" data-testid={`takeaway-${feature.id}`}>
+            <Lightbulb className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <div>
+              <div className="font-semibold text-amber-900 dark:text-amber-200 mb-0.5">Takeaway</div>
+              <p className="text-amber-900/90 dark:text-amber-100/90 leading-relaxed">{feature.takeaway}</p>
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between pt-2">
           <div className="text-xs text-muted-foreground font-mono">
             v{feature.version}

@@ -32,14 +32,16 @@ export const versionsData: Version[] = [
         title: "Subgrid Sampling - Improved Ground Level Reporting",
         description: "Ground level reporting for subgrid models has been enhanced across Network Results objects to improve accuracy and consistency. For Network Results points, lines, and polygons, ground level values are now derived from the underlying subgrid triangle (face) elevations rather than average or simplified representations, ensuring that minimum, maximum, and mean ground levels more accurately reflect local terrain variations within subgrid meshes.",
         category: "2D Modelling",
-        documentationUrl: "https://help.autodesk.com/view/IWICMS/2027/ENU/?guid=GUID-EF450CB6-647A-4BA9-90B0-C53E39C75128"
+        documentationUrl: "https://help.autodesk.com/view/IWICMS/2027/ENU/?guid=GUID-EF450CB6-647A-4BA9-90B0-C53E39C75128",
+        takeaway: "Your flood depth estimates in streets and around buildings will be more accurate without needing excessively fine meshes everywhere. Previously you had to choose between model size and accuracy near structures."
       },
       {
         id: "2027.0-ruby-upgrade",
         title: "Ruby Scripting Upgrade",
         description: "The embedded Ruby used for scripting in InfoWorks ICM has been upgraded from Ruby 2.4 to Ruby 3.4.6. This update provides a supported and maintained version and enables the use of external libraries through RubyGems. Scripts created with earlier Ruby versions may require updates to run correctly.",
         category: "Automation/Scripting",
-        documentationUrl: "https://help.autodesk.com/view/IWICMS/2027/ENU/?guid=GUID-EF450CB6-647A-4BA9-90B0-C53E39C75128"
+        documentationUrl: "https://help.autodesk.com/view/IWICMS/2027/ENU/?guid=GUID-EF450CB6-647A-4BA9-90B0-C53E39C75128",
+        takeaway: "Existing Ruby scripts may need minor updates, but you can now use modern Ruby gems and get better performance. Audit your scripts for deprecated syntax before upgrading."
       }
     ]
   },
@@ -111,7 +113,8 @@ export const versionsData: Version[] = [
         id: "2026.1-cloud",
         title: "Cloud Capabilities Enhancements",
         description: "Continued improvements to cloud integration that started in version 2024.0, enabling better cloud-based simulations and data management.",
-        category: "Cloud"
+        category: "Cloud",
+        takeaway: "If you're already on cloud databases, you don't need to do anything — these improvements land transparently and tighten the gap with on-premise workflows."
       },
       {
         id: "2026.1-flood",
@@ -184,7 +187,8 @@ export const versionsData: Version[] = [
         id: "2026.0-subgrid",
         title: "Subgrid Sampling Technical Preview",
         description: "New method for enhancing topographic representation in InfoWorks 2D models with finer triangular mesh for each 2D element. Improves predictive ability without compromising performance or accuracy.",
-        category: "Subgrid Sampling"
+        category: "Subgrid Sampling",
+        takeaway: "First taste of subgrid sampling — try it on a single catchment before rolling it out widely. The Interactive Diagrams tab has a visual walkthrough of how it differs from adaptive refinement."
       },
       {
         id: "2026.0-subgrid-results",
@@ -976,7 +980,8 @@ export const versionsData: Version[] = [
         id: "2024.0-cloud-databases",
         title: "Cloud Master Databases",
         description: "First release introducing cloud-based SaaS deployment for Autodesk InfoWorks ICM subscribers. New database type stores databases directly in cloud with all workgroup capabilities without needing workgroup server access. On-premise master databases (standalone/workgroup) still available for all users. Cloud databases have some differences from on-premise databases in workflow.",
-        category: "Cloud"
+        category: "Cloud",
+        takeaway: "You can collaborate on models without maintaining a workgroup server. Useful for remote teams and consultants who need to work on the same model simultaneously."
       },
       {
         id: "2024.0-cloud-portal",
@@ -1498,7 +1503,8 @@ export const versionsData: Version[] = [
         id: "2021.6-results-selectors",
         title: "Results Selectors for InfoWorks Networks",
         description: "New Results selector database item limits generated results to selected attributes. Choose result types (Hydraulic, Water quality, 2D), classes (rivers, subcatchments), attribute types (All, Summary, Time series, Gauge), and individual attributes. Schedule Hydraulic Run View includes results selector dropbox (becomes read-only after run completion).",
-        category: "Results"
+        category: "Results",
+        takeaway: "Generate results faster by only computing what you need. Useful when you only care about peak flows or specific locations, not the entire network — saves disk and run time."
       },
       {
         id: "2021.6-gis-export-fix",

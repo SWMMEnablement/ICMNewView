@@ -23,6 +23,7 @@ export const featureSchema = z.object({
   description: z.string(),
   category: z.string(),
   documentationUrl: z.string().optional(),
+  takeaway: z.string().optional(),
 });
 
 export const versionSchema = z.object({
