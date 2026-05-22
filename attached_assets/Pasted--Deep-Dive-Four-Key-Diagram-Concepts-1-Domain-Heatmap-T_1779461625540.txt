@@ -1,0 +1,436 @@
+# Deep Dive: Four Key Diagram Concepts
+
+---
+
+## 1. 🗺️ Domain Heatmap Timeline
+
+### What It Is
+
+A heatmap is a grid where color intensity represents quantity. A **Domain Heatmap Timeline** applies this to software features across two dimensions:
+
+**The Grid:**
+```
+              v1.5  v2.0  v3.0  v4.0  v5.0  ...  v2024.0  v2025.0  v2026.0  v2027.0
+              ───── ───── ───── ───── ─────      ──────── ──────── ──────── ────────
+1D Hydraulics  ██    ███   ██    ███   ██    ...    ██       █        ██       █
+2D Surface     ░     █     ██    ███   ██          ███      ██       ████     ██
+Water Quality  █     ██    ██    ██    ███         █        █        █        ░
+SWMM           -     -     -     -     -           ██       █        █        ░
+Cloud          -     -     -     -     -           ████     ███      ██       █
+Rainfall       ██    ██    ███   ██    ███         ██       ██       █        █
+Scripting      -     -     -     █     ██          █        ██       █        ████
+GIS/Import     ██    ███   ██    █     █           █        █        ██       █
+Results        -     █     █     ██    ██          ██       ███      █        █
+Infrastructure -     ██    █     █     █           █        █        █        █
+```
+
+**Color Scale:**
+- **Dark/strong color** = many features added in that domain for that version
+- **Light/pale color** = few features added
+- **Empty/blank** = no features in that domain for that version
+- Could use a sequential palette (light blue → dark blue) or diverging palette
+
+### What It Tells You
+
+**Row reading** (horizontal): How a single domain evolved over time
+- "Cloud features first appeared in v2024.0, peaked in v2025.0, and tapered off"
+
+**Column reading** (vertical): What a single version focused on
+- "v2024.0 was heavy on Cloud and 2D but light on scripting"
+
+**Pattern recognition:**
+- Dark cluster in one area = investment surge
+- Empty row = domain that's been neglected
+- Alternating intensity = cyclical investment
+
+### Interactions
+
+| Action | Result |
+|--------|--------|
+| **Hover a cell** | Tooltip: "v2024.0 × Cloud: 4 features (Cloud Master Databases, SaaS deployment, Workgroup replacement, Cloud storage)" |
+| **Click a cell** | Expands inline to list the specific features with links to full descriptions |
+| **Click a row label** | Shows a sparkline/mini chart of that domain's feature count over time |
+| **Click a column header** | Shows the full version detail page |
+| **Range slider** | Zoom into a subset of versions (e.g., 2023-2027 only) |
+| **Row/column reordering** | Sort domains alphabetically, by total features, or by most recent activity |
+| **Export** | Download as PNG/SVG for presentations |
+
+### Why It's Valuable for ICM Users
+
+Imagine you're a stormwater engineer deciding whether to upgrade from 2023.2 to 2026.3. You look at the heatmap and immediately see:
+- The 2D Surface row is **dark** across 2024-2026 → lots of meshing improvements
+- The SWMM row has steady moderate activity
+- Cloud is bright in 2024 but fades after
+
+That's a 10-second insight that would take 30 minutes of reading release notes to extract.
+
+---
+
+## 2. 🚨 Breaking Changes / Migration Risk Diagram
+
+### The Problem It Solves
+
+When you upgrade ICM from version X to version Y, you don't just gain features — you also face:
+- **Script compatibility issues** (Ruby 2.4 → 3.4.6 in 2027.0)
+- **Licensing system changes** (legacy → Autodesk licensing in 2023.0)
+- **Database format changes** that may require conversion
+- **Deprecated features** that no longer exist
+- **Behavioral changes** where the same feature works differently
+- **Version numbering changes** (11.x → 2021.x in 2021.1)
+
+**Nobody documents this well.** Autodesk release notes list what's new, not what might break. This diagram fills that gap.
+
+### What It Looks Like
+
+A horizontal timeline with **risk-colored markers**:
+
+```
+Version:  1.5   2.0   3.0  ...  10.0   10.5   2021.1   2023.0   2027.0
+          │     │     │         │      │      │        │        │
+          ▼     ▼     ▼         ▼      ▼      ▼        ▼        ▼
+Risk:                                                   
+     ┌─────────────────────────────────────────────────────────────────
+     │  🔴 Database format     ◆━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━▶
+     │     change (v2.0)              ⚠️ Must convert databases
+     │
+     │  🔴 SWMM engine         ◆───────────────────────▶
+     │     introduction (v10.5)  ⚠️ New network type, separate from InfoWorks
+     │
+     │  🟡 Version numbering   ◆─────────────────────────────────────▶
+     │     change (v2021.1)     Scripts/references using old version numbers
+     │
+     │  🔴 Licensing system    ◆─────────────────────────────────────▶
+     │     change (v2023.0)     ⚠️ Autodesk sign-in replaces Innovyze licensing
+     │
+     │  🟡 Multi-version DB    ◆─────────────────────────────────────▶
+     │     support (v2023.1)    Database version must match or be upgraded
+     │
+     │  🔴 Ruby upgrade        ◆─────────────────────────────────────▶
+     │     2.4 → 3.4.6 (v2027) ⚠️ Existing scripts may break, RubyGems now available
+     │
+     │  🟢 Cloud databases     ◆─────────────────────────────────────▶
+     │     (v2024.0)            New workflow, on-prem still available
+     │
+     └─────────────────────────────────────────────────────────────────
+```
+
+### Risk Categories
+
+| Level | Color | Meaning |
+|-------|-------|---------|
+| 🔴 **High** | Red | Scripts break, licensing changes, data conversion required |
+| 🟡 **Medium** | Yellow | Workflow changes, naming conventions shift, optional migration |
+| 🟢 **Low** | Green | New capability, no impact on existing workflows |
+| 🔵 **Informational** | Blue | Awareness items (e.g., renamed components) |
+
+### Interactions
+
+| Action | Result |
+|--------|--------|
+| **Select "From" and "To" versions** | Highlights only the breaking changes between those two versions |
+| **Click a risk marker** | Expands to show: what changed, what breaks, how to mitigate, estimated effort |
+| **Filter by risk level** | Show only 🔴 high-risk items |
+| **"Generate migration checklist"** | Exports a PDF/Markdown checklist of all breaking changes with mitigation steps |
+| **Impact calculator** | "If you have 50 custom Ruby scripts and 200 database items, estimated migration effort: 3-5 days" |
+
+### Example Expanded Detail (Ruby 2.4 → 3.4.6)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ 🚨 BREAKING CHANGE: Ruby Scripting Upgrade              │
+│ Version: 2027.0 | Risk Level: 🔴 High                    │
+├─────────────────────────────────────────────────────────┤
+│ WHAT CHANGED:                                           │
+│ Embedded Ruby upgraded from 2.4 to 3.4.6               │
+│                                                          │
+│ WHAT BREAKS:                                            │
+│ • Scripts using deprecated Ruby 2.x syntax              │
+│ • Gem dependencies compiled for Ruby 2.4               │
+│ • Encoding defaults changed                            │
+│                                                          │
+│ WHAT YOU GAIN:                                          │
+│ • External libraries via RubyGems now supported         │
+│ • Security patches and performance improvements         │
+│ • Access to modern Ruby ecosystem                       │
+│                                                          │
+│ MIGRATION STEPS:                                        │
+│ 1. Audit all custom Ruby scripts                       │
+│ 2. Test scripts in non-production environment           │
+│ 3. Update deprecated syntax (link to Ruby migration)    │
+│ 4. Replace any inline gems with RubyGems references     │
+│                                                          │
+│ ESTIMATED EFFORT: 1-3 days per 10 scripts               │
+│                                                          │
+│ RELATED: Version 2027.0 release notes →                 │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Why This Would Be Unique
+
+**I've never seen any software documentation tool do this well.** Most release notes bury breaking changes in footnotes or don't flag them at all. For ICM users managing production models worth millions in infrastructure decisions, knowing exactly what will break and how to fix it is arguably more important than knowing what's new.
+
+---
+
+## 3. 🕸️ Feature Dependency Map
+
+### The Core Concept
+
+Features don't exist in isolation. They build on each other. A **Feature Dependency Map** visualizes these relationships as a directed graph (nodes + edges):
+
+**Nodes** = features or capability milestones
+**Edges** = relationships (prerequisite, enhancement, superseded-by)
+
+### Relationship Types
+
+| Edge Type | Meaning | Visual |
+|-----------|---------|--------|
+| **Prerequisite** | Feature B requires Feature A to exist | Solid arrow A → B |
+| **Enhancement** | Feature B improves upon Feature A | Dashed arrow A → B |
+| **Superseded** | Feature B replaces Feature A | Red X on A, arrow A → B |
+| **Companion** | Features A and B work together but neither requires the other | Bidirectional dotted line |
+| **Conflict** | Feature A and Feature B can't coexist or have tradeoffs | Red wavy line |
+
+### Example Subgraph: 2D Meshing Evolution
+
+```
+v1.5 (2011)                    v3.5 (2013)                   v2021.4 (2021)
+┌──────────────┐               ┌──────────────┐              ┌───────────────────┐
+│ 2D Zone      │──────────────▶│ TSDB Spatial │              │ Roughness         │
+│ Basic Mesh   │  prerequisite │ Rain Support │              │ Definitions       │
+└──────────────┘               └──────┬───────┘              │ (depth-dependent) │
+       │                              │                      └─────────┬─────────┘
+       │                              │ prerequisite                     │
+       ▼                              ▼                                  │ enhancement
+┌──────────────┐               ┌──────────────┐                          ▼
+│ 2D Boundary  │               │ Spatial Rain │                   ┌──────────────────┐
+│ Conditions   │               │ Zones        │                   │ v2023.2:         │
+└──────┬───────┘               └──────────────┘                   │ Priority-Based   │
+       │                                                          │ Meshing with     │
+       │ enhancement                                              │ Overlapping      │
+       ▼                                                          │ Roughness Zones  │
+┌──────────────┐                                                  └────────┬─────────┘
+│ v2021.8:     │                                                           │
+│ 2D Boundary  │                                                           │ enhancement
+│ Objects for  │                                                           ▼
+│ SWMM         │                                                   ┌──────────────────┐
+└──────────────┘                                                   │ v2026.3:         │
+                                                                   │ Subgrid Meshing  │
+                                                                   │ Improvements     │
+                                                                   └──────────────────┘
+```
+
+### What This Reveals
+
+Looking at the map above, a user can instantly see:
+
+1. **The 2D meshing story spans 15 years** — from basic zones in v1.5 to sophisticated subgrid meshing in v2026.3
+2. **Roughness Definitions (v2021.4) was the key unlock** that enabled Priority-Based Meshing (v2023.2) which then enabled Subgrid improvements (v2026.3)
+3. **2D Boundary Objects for SWMM (v2021.8)** was a bridge connecting the InfoD domain meshing worlds
+4. **TSDB Spatial Rain (v3.5)** feeds into the 2D system as a prerequisite
+
+### Interactions
+
+| Action | Result |
+|--------|--------|
+| **Click a node** | Shows full feature description, version, and all connected features |
+| **"Show predecessors"** | Traces backward to show everything this feature depends on |
+| **"Show dependents"** | Traces forward to show everything that depends on this feature |
+| **"Find path"** | User selects two features; diagram highlights the shortest dependency path between them |
+| **Filter by domain** | Show only 2D-related nodes, only Cloud-related nodes, etc. |
+| **Filter by version range** | "Show me the dependency chain that existed as of v2024.0" |
+| **"What if I'm on v2023.1?"** | Grays out everything unavailable, highlights what you're missing |
+| **Search** | "Roughness" → highlights all nodes related to roughness |
+
+### Practical Use Cases
+
+**Use case 1: "Can I use Subgrid Sampling on my 2024.0 installation?"**
+- User searches "Subgrid Sampling"
+- Map traces back: Subgrid Sampling → requires Subgrid Meshing (2023.2) → requires Roughness Definitions (2021.4)
+- Answer: Yes, if you have 2023.2+, but you'll miss the 2026.3 improvements
+
+**Use case 2: "I want to understand the SWMM integration story"**
+- User filters by "SWMM domain"
+- Map shows: SWMM Engine (v10.5) → 2D Boundary Objects for SWMM (v2021.8) → continued enhancements
+- Clear picture of the maturity arc
+
+**Use case 3: "What's the most connected feature?"**
+- The node with the most edges is probably the most foundational capability — identifying it reveals the product's architectural backbone
+
+### Technical Implementation Notes
+
+- This is essentially a **directed acyclic graph (DAG)** visualization
+- Libraries: D3.js force-directed graph, Cytoscape.js, vis.js, or Sigma.js
+- Layout: hierarchical top-to-bottom (oldest at top, newest at bottom) with domain-based clustering
+- Could be auto-generated from a feature database with manually annotated relationships
+- The hardest part is **curating the relationships** — this requires deep domain knowledge of ICM
+
+---
+
+## 4. 📊 Capability Growth Radar Chart
+
+### What a Radar Chart Is
+
+A radar chart (also called a spider chart or star chart) has multiple axes radiating from a center point, like spokes on a wheel. Each axis represents a dimension, and data points are plotted along each axis and connected to form a polygon.
+
+```
+                    1D Hydraulics
+                         │
+                         │
+           Infrastructure├──────────── 2D Surface
+                    ╱    │    ╲
+                   ╱     │     ╲
+     GIS/Import ──╱──────┼──────╲── Cloud
+                 ╱       │       ╲
+                ╱        │        ╲
+    Scripting ──╱─────────┼─────────╲── Results
+                         │
+                         │
+                Water Quality ── Rainfall
+                    (SWMM)
+```
+
+### How It Works for ICM
+
+**Step 1: Define the axes (domains)**
+
+| Axis | What It Covers |
+|------|----------------|
+| 1D Hydraulics | Pipes, channels, nodes, surcharging, flow routing |
+| 2D Surface | Meshing, flooding, surface water, subgrid |
+| Water Quality | Pollutant modeling, sediment, diffusion |
+| SWMM Integration | EPA SWMM compatibility, LID/SUDS |
+| River Modeling | River reaches, sections, sediment transport |
+| Cloud/SaaS | Cloud databases, cloud simulation, remote access |
+| Scripting/Automation | Ruby, APIs, batch processing, TSDB |
+| GIS/Import | Esri integration, HEC-RAS import, 12DA, shapefiles |
+| Results Analysis | Visualization, reporting, selectors, damage assessment |
+| Infrastructure | Database management, workgroup, licensing, versioning |
+
+**Step 2: Score each domain for each version**
+
+This is the key design decision. You need a scoring methodology:
+
+- **Count** the number of features added in that domain → normalized to a 0-10 scale
+- **Weight** by significance (a "major release" feature scores higher than a minor enhancement)
+- Or use a **hybrid**: expert-assigned weights + feature count
+
+Example scoring for selected versions:
+
+```
+Domain              v1.5  v5.0  v10.5  v2023.0  v2024.0  v2027.0
+─────────────────   ────  ────  ─────  ───────  ───────  ────────
+1D Hydraulics         7     6      5       4        3        4
+2D Surface            3     5      4       5        6        5
+Water Quality         2     7      3       2        2        1
+SWMM                  0     0      8       3        4        2
+River Modeling        4     6      2       2        1        1
+Cloud                 0     0      0       4        9        5
+Scripting             0     3      1       2        4        8
+GIS/Import            5     3      2       2        3        3
+Results               1     4      3       3        5        4
+Infrastructure        6     3      4       6        3        4
+```
+
+**Step 3: Overlay polygons on the radar**
+
+Each version becomes a colored polygon. You can show one version at a time or overlay multiple for comparison:
+
+```
+                    1D Hydraulics
+                         │
+                    7    │    5
+                   ╱     │     ╲
+     v1.5 (blue)  ╱  ····│····  · v2024.0 (orange)
+                 ╱····   │   ····╲
+                ╱····    │    ····╲
+               ╱·····    │     ····╲
+              ╱           │          ╲
+             ╱            │           ╲
+    Scripting              Results
+```
+
+### What It Reveals
+
+**Pattern 1: Shaping**
+- v1.5 → elongated toward 1D Hydraulics and Infrastructure (early product focused on core pipe network modeling)
+- v10.5 → big spike on SWMM (major feature launch)
+- v2024.0 → big spike on Cloud (strategic pivot)
+
+**Pattern 2: Balance**
+- A well-rounded polygon = a balanced release with investment across all domains
+- A spiky polygon = a focused release targeting specific capabilities
+
+**Pattern 3: Neglect**
+- Axes where the polygon consistently stays near center = underinvested domains
+- "Has Water Quality been neglected since v5.0?" → look at the axis over time
+
+**Pattern 4: Cumulative vs. Incremental**
+- You can show **cumulative** capability (total features ever added) or **incremental** (features added in just that version)
+- Cumulative shows total product strength; incremental shows where attention is going now
+
+### Interactions
+
+| Action | Result |
+|--------|--------|
+| **Version slider** | Scrub through versions; watch the polygon morph in real-time |
+| **Overlay toggle** | Show 2-3 versions simultaneously with different colors for direct comparison |
+| **Click an axis** | Shows all features in that domain across all versions |
+| **Click a polygon vertex** | Shows which specific features contribute to that score |
+| **"My version" selector** | User selects their current ICM version; shows what they have vs. latest |
+| **Domain reorder** | Drag axes to rearrange the chart for different perspectives |
+| **"Target state" overlay** | User or team defines their ideal capability profile; compares against reality |
+| **Export** | Download as PNG for inclusion in upgrade proposals or presentations |
+
+### Use Cases for ICM Users
+
+**Use case 1: Upgrade justification to management**
+- "We're on v2023.0. Here's our current capability profile vs. v2027.0. Look at how much Cloud and Scripting has grown."
+- The radar makes the argument visually compelling
+
+**Use case 2: Identifying training needs**
+- "Our team's strengths are in 1D Hydraulics and River Modeling. The radar shows we're weak in Cloud and Scripting. We should invest in training those areas to leverage the latest features."
+
+**Use case 3: Vendor/product assessment**
+- "How balanced is the ICM product? Is it a 1D tool that added 2D as an afterthought, or is it genuinely multi-domain?"
+- The radar answers this at a glance
+
+**Use case 4: Strategic planning**
+- "If Autodesk continues investing at the current trajectory, what will the radar look like in v2028?"
+- Could add a projected/forecast polygon based on trend analysis
+
+---
+
+## Summary: How These Four Diagrams Work Together
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    USER'S GOAL                               │
+│         "Should I upgrade from v2023.2 to v2027.0?"         │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+          ┌───────────────┼───────────────┐
+          ▼               ▼               ▼
+   ┌──────────┐   ┌──────────────┐  ┌──────────────┐
+   │ Domain   │   │  Breaking    │  │  Capability  │
+   │ Heatmap  │   │  Changes     │  │  Radar       │
+   │ Timeline │   │  Diagram     │  │  Chart       │
+   └────┬─────┘   └──────┬───────┘  └──────┬───────┘
+        │                │                  │
+        ▼                ▼                  ▼
+   "What's new in   "What might       "How has the
+    each domain?"    break?"           shape changed?"
+        │                │                  │
+        └───────────────┼──────────────────┘
+                        ▼
+                ┌───────────────┐
+                │  Feature      │
+                │  Dependency   │
+                │  Map          │
+                └───────┬───────┘
+                        ▼
+                "What's the path
+                 from what I have
+                 to what I need?"
+```
+
+The **Heatmap** gives breadth, the **Breaking Changes** diagram gives risk, the **Radar** gives strategic shape, and the **Dependency Map** gives depth. Together they transform 809 features from an overwhelming spreadsheet into an explorable, decision-support system.

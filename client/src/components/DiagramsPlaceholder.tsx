@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Layers, Droplet, CloudRain, Database, Settings2, BarChart3, ArrowLeft, Sprout, ShieldAlert, Radar } from "lucide-react";
+import { Layers, Droplet, CloudRain, Database, Settings2, BarChart3, ArrowLeft, Sprout, ShieldAlert, Radar, Network } from "lucide-react";
 import RoughnessZoneSketch from "./diagrams/RoughnessZoneSketch";
 import MeshingEvolutionSketch from "./diagrams/MeshingEvolutionSketch";
 import DesignRainfallSketch from "./diagrams/DesignRainfallSketch";
@@ -11,8 +11,9 @@ import PumpStationSketch from "./diagrams/PumpStationSketch";
 import RunoffSketch from "./diagrams/RunoffSketch";
 import BreakingChangesSketch from "./diagrams/BreakingChangesSketch";
 import CapabilityRadarSketch from "./diagrams/CapabilityRadarSketch";
+import DependencyMapSketch from "./diagrams/DependencyMapSketch";
 
-type DiagramId = "roughness" | "meshing" | "rainfall" | "database" | "pump" | "runoff" | "breaking" | "radar";
+type DiagramId = "roughness" | "meshing" | "rainfall" | "database" | "pump" | "runoff" | "breaking" | "radar" | "deps";
 
 interface DiagramMeta {
   id: DiagramId;
@@ -91,6 +92,15 @@ const DIAGRAMS: DiagramMeta[] = [
     color: "bg-violet-500/10 text-violet-700 dark:text-violet-300",
     available: true,
   },
+  {
+    id: "deps",
+    title: "Feature Dependency Map",
+    blurb: "Directed graph of how key features built on each other — prerequisites, enhancements, successors. Drag nodes, click for context, filter by domain.",
+    icon: Network,
+    color: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300",
+    available: true,
+    badge: "Lineage",
+  },
 ];
 
 export default function DiagramsPlaceholder() {
@@ -123,6 +133,7 @@ export default function DiagramsPlaceholder() {
           {active.id === "runoff" && <RunoffSketch />}
           {active.id === "breaking" && <BreakingChangesSketch />}
           {active.id === "radar" && <CapabilityRadarSketch />}
+          {active.id === "deps" && <DependencyMapSketch />}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
