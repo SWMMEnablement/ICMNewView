@@ -2,12 +2,15 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Layers, Droplet, CloudRain, Database, Settings2, BarChart3, ArrowLeft } from "lucide-react";
+import { Layers, Droplet, CloudRain, Database, Settings2, BarChart3, ArrowLeft, Sprout } from "lucide-react";
 import RoughnessZoneSketch from "./diagrams/RoughnessZoneSketch";
 import MeshingEvolutionSketch from "./diagrams/MeshingEvolutionSketch";
 import DesignRainfallSketch from "./diagrams/DesignRainfallSketch";
+import DatabaseArchitectureSketch from "./diagrams/DatabaseArchitectureSketch";
+import PumpStationSketch from "./diagrams/PumpStationSketch";
+import RunoffSketch from "./diagrams/RunoffSketch";
 
-type DiagramId = "roughness" | "meshing" | "rainfall" | "database" | "pump";
+type DiagramId = "roughness" | "meshing" | "rainfall" | "database" | "pump" | "runoff";
 
 interface DiagramMeta {
   id: DiagramId;
@@ -48,18 +51,26 @@ const DIAGRAMS: DiagramMeta[] = [
   {
     id: "database",
     title: "Database Architecture Comparator",
-    blurb: "Toggle on-premise vs cloud architectures with animated data flow between servers, clients and the API gateway.",
+    blurb: "Toggle on-premise vs cloud architectures with animated data flow between clients, gateway and backend services.",
     icon: Database,
     color: "bg-cyan-500/10 text-cyan-700 dark:text-cyan-300",
-    available: false,
+    available: true,
   },
   {
     id: "pump",
     title: "Pump Station Configurator",
-    blurb: "Drag points on a pump curve and watch the operating point shift against a live system curve.",
+    blurb: "Tune pump and system curves with sliders. The operating point updates live where the two curves cross.",
     icon: Settings2,
     color: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
-    available: false,
+    available: true,
+  },
+  {
+    id: "runoff",
+    title: "Subcatchment Runoff (SCS-CN)",
+    blurb: "Pick a land use and storm depth. See how curve number turns rainfall into runoff vs losses, bar by bar.",
+    icon: Sprout,
+    color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    available: true,
   },
 ];
 
@@ -88,6 +99,9 @@ export default function DiagramsPlaceholder() {
           {active.id === "roughness" && <RoughnessZoneSketch />}
           {active.id === "meshing" && <MeshingEvolutionSketch />}
           {active.id === "rainfall" && <DesignRainfallSketch />}
+          {active.id === "database" && <DatabaseArchitectureSketch />}
+          {active.id === "pump" && <PumpStationSketch />}
+          {active.id === "runoff" && <RunoffSketch />}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
