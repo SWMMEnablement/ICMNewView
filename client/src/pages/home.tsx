@@ -222,10 +222,14 @@ export default function HomePage() {
                 </div>
               )}
             </div>
-            {!mobile && (
+            {!mobile && versions && versions.length > 0 && (
               <p className="text-muted-foreground">
-                Explore {totalFeatures} features across {versions?.length || 0} versions from 2011 to present
+                Explore {totalFeatures} features across {versions.length} versions from 2011 to present ·{" "}
+                <span className="italic">sourced from the Autodesk InfoWorks ICM online help</span>
               </p>
+            )}
+            {!mobile && (!versions || versions.length === 0) && (
+              <p className="text-muted-foreground">Loading release history…</p>
             )}
           </div>
           {!mobile && versions && versions.length > 0 && (

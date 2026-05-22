@@ -107,7 +107,7 @@ export const versionsData: Version[] = [
   {
     id: "2026.1",
     version: "2026.1",
-    releaseDate: "2026-06-01",
+    releaseDate: "2025-08-01",
     features: [
       {
         id: "2026.1-cloud",
