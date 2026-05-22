@@ -224,8 +224,16 @@ export default function HomePage() {
             </div>
             {!mobile && versions && versions.length > 0 && (
               <p className="text-muted-foreground">
-                Explore {totalFeatures} features across {versions.length} versions from 2011 to present ·{" "}
-                <span className="italic">sourced from the Autodesk InfoWorks ICM online help</span>
+                Explore {totalFeatures} features across {versions.length} versions from 2011 to present · sourced from the{" "}
+                <a
+                  href="https://help.autodesk.com/view/IWICMS/2027/ENU/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline hover:text-foreground"
+                  data-testid="link-help-source"
+                >
+                  Autodesk InfoWorks ICM online help
+                </a>
               </p>
             )}
             {!mobile && (!versions || versions.length === 0) && (
