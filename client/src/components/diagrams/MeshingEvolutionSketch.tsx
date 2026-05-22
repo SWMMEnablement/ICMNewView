@@ -1,173 +1,237 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type p5 from "p5";
 import { Card, CardContent } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Lightbulb } from "lucide-react";
 import P5Sketch from "../P5Sketch";
 
-const STAGES = [
+interface Stage {
+  version: string;
+  label: string;
+  blurb: string;
+  baseCell: number;       // base mesh resolution
+  refineNear: number;     // how many recursive splits near buildings (0 = none)
+  refineDist: number;     // distance from a building edge that triggers refinement
+  subgrid: boolean;       // sample sub-cell topography for smooth output
+  elementsApprox: number; // headline count for the badge
+}
+
+const STAGES: Stage[] = [
   {
     version: "2011",
     label: "Uniform coarse grid",
-    blurb: "Single mesh resolution everywhere — fast to run, but flow paths around buildings are barely resolved.",
-    cellSize: 50,
-    adaptive: false,
+    blurb: "Single resolution everywhere. Fast, but flood depth jumps in big blocks around buildings — alley-scale flow is invisible.",
+    baseCell: 50,
+    refineNear: 0,
+    refineDist: 0,
     subgrid: false,
+    elementsApprox: 84,
   },
   {
     version: "2015",
     label: "Adaptive refinement",
-    blurb: "Mesh refines near buildings and breaklines. Better accuracy, larger element count.",
-    cellSize: 50,
-    adaptive: true,
+    blurb: "Cells split once near buildings. Depth gradient sharpens at façades; element count roughly doubles.",
+    baseCell: 50,
+    refineNear: 1,
+    refineDist: 30,
     subgrid: false,
+    elementsApprox: 168,
   },
   {
     version: "2020",
     label: "Aggressive refinement",
-    blurb: "Even finer refinement near features. Models become large; runtimes grow.",
-    cellSize: 50,
-    adaptive: true,
-    refinementFactor: 2,
+    blurb: "Two levels of refinement near features. Best façade detail of any pre-subgrid era — but element count and runtime balloon.",
+    baseCell: 50,
+    refineNear: 2,
+    refineDist: 40,
     subgrid: false,
+    elementsApprox: 540,
   },
   {
     version: "2027",
     label: "Subgrid sampling",
-    blurb: "Coarse mesh keeps runtime low. Subgrid sampling stores higher-resolution topography inside each cell — flood depths at buildings are accurate without exploding the mesh.",
-    cellSize: 50,
-    adaptive: false,
+    blurb: "Coarse cells stay coarse, but each cell carries a sub-sampled depth field. You get smooth, building-aware flooding without exploding the mesh.",
+    baseCell: 50,
+    refineNear: 0,
+    refineDist: 0,
     subgrid: true,
+    elementsApprox: 84,
   },
-] as const;
+];
 
-// Static building geometry — same scene across versions
+const W = 620;
+const H = 340;
+
+// Static urban scene
 const BUILDINGS = [
-  { x: 160, y: 110, w: 90, h: 70 },
+  { x: 150, y: 110, w: 90, h: 70 },
   { x: 290, y: 180, w: 70, h: 60 },
   { x: 410, y: 90, w: 110, h: 50 },
   { x: 380, y: 240, w: 60, h: 50 },
+  { x: 80, y: 220, w: 50, h: 50 },
 ];
+
+// "True" continuous flood-depth field, defined analytically so we can sample
+// it at any resolution. Depth peaks along a curving river then attenuates,
+// with buildings displacing flow around them.
+function depthAt(x: number, y: number): number {
+  // River runs from left to right with a sinusoidal sway
+  const riverY = H / 2 + Math.sin(x / 70) * 50;
+  const distToRiver = Math.abs(y - riverY);
+  let d = Math.max(0, 1 - distToRiver / 110);
+
+  // Buildings push water sideways: add a thin ring of slightly elevated depth
+  for (const b of BUILDINGS) {
+    const cx = Math.max(b.x, Math.min(x, b.x + b.w));
+    const cy = Math.max(b.y, Math.min(y, b.y + b.h));
+    const dist = Math.hypot(x - cx, y - cy);
+    if (dist < 30 && dist > 0) d += (1 - dist / 30) * 0.3;
+    if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) return -1; // inside building
+  }
+  return Math.min(1, d);
+}
+
+function depthColor(p: p5, d: number) {
+  if (d < 0) return null; // building
+  // Light cream (dry) → blue (deep)
+  const t = Math.max(0, Math.min(1, d));
+  const r = 245 - t * 175;
+  const g = 240 - t * 110;
+  const b = 220 + t * 30;
+  return p.color(r, g, b);
+}
+
+function distToBuilding(cx: number, cy: number): number {
+  let best = Infinity;
+  for (const b of BUILDINGS) {
+    const dx = Math.max(b.x - cx, 0, cx - (b.x + b.w));
+    const dy = Math.max(b.y - cy, 0, cy - (b.y + b.h));
+    const d = Math.hypot(dx, dy);
+    if (d < best) best = d;
+  }
+  return best;
+}
 
 export default function MeshingEvolutionSketch() {
   const [stageIdx, setStageIdx] = useState(0);
-  const stage = STAGES[stageIdx];
+  const [showMesh, setShowMesh] = useState(true);
 
+  const stageRef = useRef(stageIdx);
+  const showMeshRef = useRef(showMesh);
+  useEffect(() => { stageRef.current = stageIdx; }, [stageIdx]);
+  useEffect(() => { showMeshRef.current = showMesh; }, [showMesh]);
+
+  // Sketch created ONCE — reads live state via refs
   const sketch = useCallback((p: p5) => {
-    const W = 620;
-    const H = 340;
-
-    function nearBuilding(cx: number, cy: number, margin = 0): boolean {
-      return BUILDINGS.some(
-        (b) =>
-          cx + 25 > b.x - margin &&
-          cx - 25 < b.x + b.w + margin &&
-          cy + 25 > b.y - margin &&
-          cy - 25 < b.y + b.h + margin
-      );
-    }
-
     p.setup = () => {
       p.createCanvas(W, H);
       p.textFont("Inter, system-ui, sans-serif");
-      p.noLoop();
     };
 
-    p.draw = () => {
-      p.background(245, 247, 250);
-
-      const s = STAGES[stageIdx];
-
-      // Draw mesh based on stage
-      p.stroke(160, 200, 240);
-      p.strokeWeight(1);
-      p.noFill();
-      const base = s.cellSize;
-      for (let x = 0; x < W; x += base) {
-        for (let y = 0; y < H; y += base) {
-          if (s.adaptive) {
-            const refinement = (s as any).refinementFactor || 1;
-            const near = nearBuilding(x + base / 2, y + base / 2, 30);
-            if (near) {
-              const sub = base / (2 * refinement);
-              for (let ix = 0; ix < base; ix += sub) {
-                for (let iy = 0; iy < base; iy += sub) {
-                  p.rect(x + ix, y + iy, sub, sub);
-                }
-              }
-            } else {
-              p.rect(x, y, base, base);
+    function drawCell(x: number, y: number, size: number, s: Stage) {
+      if (s.subgrid) {
+        // Fill the cell using a fine sub-sampled depth field
+        const sub = 5;
+        p.noStroke();
+        for (let dx = 0; dx < size; dx += sub) {
+          for (let dy = 0; dy < size; dy += sub) {
+            const d = depthAt(x + dx + sub / 2, y + dy + sub / 2);
+            const c = depthColor(p, d);
+            if (c) {
+              p.fill(c);
+              p.rect(x + dx, y + dy, sub, sub);
             }
-          } else {
-            p.rect(x, y, base, base);
           }
         }
+      } else {
+        // Sample once at the cell centre — produces blocky output
+        const d = depthAt(x + size / 2, y + size / 2);
+        const c = depthColor(p, d);
+        p.noStroke();
+        if (c) {
+          p.fill(c);
+          p.rect(x, y, size, size);
+        }
       }
+    }
 
-      // Subgrid sampling visualization: overlay fine dots inside coarse cells near buildings
-      if (s.subgrid) {
-        for (let x = 0; x < W; x += base) {
-          for (let y = 0; y < H; y += base) {
-            if (nearBuilding(x + base / 2, y + base / 2, 40)) {
-              // Mark cell as subgrid-enriched
-              p.fill(255, 200, 100, 50);
-              p.noStroke();
-              p.rect(x, y, base, base);
-              // Sampling dots
-              p.fill(220, 120, 30);
-              for (let dx = 5; dx < base; dx += 10) {
-                for (let dy = 5; dy < base; dy += 10) {
-                  if (!isInsideBuilding(x + dx, y + dy)) {
-                    p.ellipse(x + dx, y + dy, 1.5);
-                  }
-                }
-              }
-            }
-          }
+    function refineAndDraw(x: number, y: number, size: number, s: Stage, level: number) {
+      const cx = x + size / 2;
+      const cy = y + size / 2;
+      const should = level < s.refineNear && distToBuilding(cx, cy) < s.refineDist;
+      if (should) {
+        const half = size / 2;
+        refineAndDraw(x, y, half, s, level + 1);
+        refineAndDraw(x + half, y, half, s, level + 1);
+        refineAndDraw(x, y + half, half, s, level + 1);
+        refineAndDraw(x + half, y + half, half, s, level + 1);
+      } else {
+        drawCell(x, y, size, s);
+        if (showMeshRef.current) {
+          p.noFill();
+          p.stroke(70, 110, 160, 110);
+          p.strokeWeight(0.6);
+          p.rect(x, y, size, size);
+        }
+      }
+    }
+
+    p.draw = () => {
+      const s = STAGES[stageRef.current];
+      p.background(248);
+
+      // Fill mesh cells
+      for (let x = 0; x < W; x += s.baseCell) {
+        for (let y = 0; y < H; y += s.baseCell) {
+          refineAndDraw(x, y, s.baseCell, s, 0);
         }
       }
 
       // Buildings on top
       p.noStroke();
       p.fill(60, 70, 90);
-      for (const b of BUILDINGS) {
-        p.rect(b.x, b.y, b.w, b.h, 2);
-      }
+      for (const b of BUILDINGS) p.rect(b.x, b.y, b.w, b.h, 2);
+      // Roof outlines for clarity
+      p.noFill();
+      p.stroke(30, 40, 60);
+      p.strokeWeight(1);
+      for (const b of BUILDINGS) p.rect(b.x, b.y, b.w, b.h, 2);
 
-      // Element count badge
-      const count = estimateElementCount(s);
-      p.fill(20, 200);
+      // Title badge
       p.noStroke();
-      p.rect(10, 10, 200, 46, 4);
+      p.fill(20, 200);
+      p.rect(10, 10, 240, 50, 4);
       p.fill(255);
       p.textAlign(p.LEFT, p.TOP);
       p.textSize(11);
-      p.text(`Mesh: ${s.label}`, 18, 16);
+      p.text(`v${s.version} — ${s.label}`, 18, 16);
       p.textSize(13);
-      p.text(`≈ ${count.toLocaleString()} elements`, 18, 32);
-    };
+      p.text(`≈ ${s.elementsApprox.toLocaleString()} elements`, 18, 34);
 
-    function isInsideBuilding(x: number, y: number) {
-      return BUILDINGS.some((b) => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h);
-    }
-
-    function estimateElementCount(s: typeof STAGES[number]) {
-      const baseCount = (W / s.cellSize) * (H / s.cellSize);
-      if (!s.adaptive) return Math.round(baseCount);
-      const refinement = (s as any).refinementFactor || 1;
-      // Count cells near buildings refined into (2*refinement)^2 subcells
-      let extra = 0;
-      for (let x = 0; x < W; x += s.cellSize) {
-        for (let y = 0; y < H; y += s.cellSize) {
-          if (nearBuilding(x + s.cellSize / 2, y + s.cellSize / 2, 30)) {
-            extra += (2 * refinement) ** 2 - 1;
-          }
+      // Depth-scale legend (bottom-right)
+      const lx = W - 130;
+      const ly = H - 28;
+      p.noStroke();
+      for (let i = 0; i < 100; i++) {
+        const c = depthColor(p, i / 100);
+        if (c) {
+          p.fill(c);
+          p.rect(lx + i * 1.1, ly, 1.2, 10);
         }
       }
-      return Math.round(baseCount + extra);
-    }
-  }, [stageIdx]);
+      p.fill(60);
+      p.textAlign(p.LEFT, p.BOTTOM);
+      p.textSize(10);
+      p.text("dry", lx, ly);
+      p.textAlign(p.RIGHT, p.BOTTOM);
+      p.text("deep flood", lx + 110, ly);
+    };
+  }, []);
+
+  const stage = STAGES[stageIdx];
 
   return (
     <Card>
@@ -175,14 +239,18 @@ export default function MeshingEvolutionSketch() {
         <div>
           <h3 className="font-semibold text-lg">2D Meshing Evolution</h3>
           <p className="text-sm text-muted-foreground">
-            Same urban scene, four mesh strategies across 16 years of ICM development.
+            Same urban scene and same underlying flood field. Watch how each mesh strategy samples it differently — the colour of each cell is the depth that strategy would report.
           </p>
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <Badge variant="outline" className="font-mono">v{stage.version}</Badge>
-            <span className="text-sm font-medium">{stage.label}</span>
+            <span className="text-sm font-medium flex-1">{stage.label}</span>
+            <div className="flex items-center gap-2">
+              <Switch id="show-mesh" checked={showMesh} onCheckedChange={setShowMesh} data-testid="switch-show-mesh" />
+              <Label htmlFor="show-mesh" className="text-xs cursor-pointer">Show mesh lines</Label>
+            </div>
           </div>
           <Slider
             value={[stageIdx]}
@@ -191,14 +259,15 @@ export default function MeshingEvolutionSketch() {
             max={STAGES.length - 1}
             step={1}
             data-testid="slider-mesh-stage"
+            aria-label="Meshing era"
           />
-          <div className="flex justify-between text-xs text-muted-foreground">
+          <div className="flex justify-between text-xs">
             {STAGES.map((s, i) => (
               <button
                 key={s.version}
                 type="button"
                 onClick={() => setStageIdx(i)}
-                className={i === stageIdx ? "font-semibold text-foreground" : "hover:text-foreground"}
+                className={`hover-elevate active-elevate-2 rounded px-1.5 py-0.5 ${i === stageIdx ? "font-semibold text-foreground" : "text-muted-foreground"}`}
                 data-testid={`mesh-stage-${s.version}`}
               >
                 v{s.version}
@@ -207,7 +276,11 @@ export default function MeshingEvolutionSketch() {
           </div>
         </div>
 
-        <div className="rounded-md border overflow-hidden bg-background flex justify-center">
+        <div
+          className="rounded-md border overflow-hidden bg-background flex justify-center"
+          role="img"
+          aria-label={`Urban flood scene meshed using ${stage.label} (${stage.elementsApprox} elements approx).`}
+        >
           <P5Sketch sketch={sketch} data-testid="sketch-meshing" />
         </div>
 
@@ -218,7 +291,7 @@ export default function MeshingEvolutionSketch() {
           <div>
             <span className="font-semibold text-amber-900 dark:text-amber-200">Takeaway: </span>
             <span className="text-amber-900/90 dark:text-amber-100/90">
-              Subgrid sampling (v2027) breaks the historical trade-off between mesh size and accuracy near buildings. You get the runtime of a coarse mesh with the flood-depth fidelity of a fine one.
+              Compare v2020 and v2027 directly. Both resolve the depth gradient at building façades smoothly — but v2027 does it with the element count of v2011. That's the runtime saving that subgrid sampling unlocks.
             </span>
           </div>
         </div>
