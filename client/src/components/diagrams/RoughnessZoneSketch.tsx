@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type p5 from "p5";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,10 +45,18 @@ function findEffective(x: number, y: number, zones: Zone[]): { zone: Zone; index
 export default function RoughnessZoneSketch() {
   const [zones, setZones] = useState<Zone[]>(() => DEFAULT_ZONES.map((z) => ({ ...z })));
   const [selectedIdx, setSelectedIdx] = useState(0);
-  const [probe, setProbe] = useState<{ x: number; y: number } | null>({ x: 280, y: 175 });
+  const [probe, setProbe] = useState<{ x: number; y: number }>({ x: 280, y: 175 });
+
+  // Refs the p5 sketch reads on every draw — sketch mounts once.
+  const zonesRef = useRef(zones);
+  const selectedRef = useRef(selectedIdx);
+  const probeRef = useRef(probe);
+  useEffect(() => { zonesRef.current = zones; }, [zones]);
+  useEffect(() => { selectedRef.current = selectedIdx; }, [selectedIdx]);
+  useEffect(() => { probeRef.current = probe; }, [probe]);
 
   const selected = zones[selectedIdx];
-  const effective = probe ? findEffective(probe.x, probe.y, zones) : null;
+  const effective = findEffective(probe.x, probe.y, zones);
 
   const updateSelected = (patch: Partial<Zone>) => {
     setZones((prev) => prev.map((z, i) => (i === selectedIdx ? { ...z, ...patch } : z)));
@@ -69,19 +77,21 @@ export default function RoughnessZoneSketch() {
     };
 
     p.draw = () => {
-      p.background(248);
+      const zs = zonesRef.current;
+      const sel = selectedRef.current;
+      const pr = probeRef.current;
 
-      // Grid backdrop
+      p.background(248);
       p.stroke(230);
       p.strokeWeight(1);
       for (let gx = 0; gx <= W; gx += 40) p.line(gx, 0, gx, H);
       for (let gy = 0; gy <= H; gy += 40) p.line(0, gy, W, gy);
 
-      const sorted = [...zones].sort((a, b) => a.priority - b.priority);
+      const sorted = [...zs].sort((a, b) => a.priority - b.priority);
       for (const z of sorted) {
-        const idx = zones.indexOf(z);
+        const idx = zs.indexOf(z);
         const c = PALETTE[idx % PALETTE.length];
-        const isSelected = idx === selectedIdx;
+        const isSelected = idx === sel;
         p.noStroke();
         p.fill(c[0], c[1], c[2], 90);
         p.ellipse(z.x, z.y, z.radius * 2);
@@ -102,29 +112,27 @@ export default function RoughnessZoneSketch() {
         p.text(`Priority ${z.priority}`, z.x, z.y + 8);
       }
 
-      if (probe) {
-        const eff = findEffective(probe.x, probe.y, zones);
-        p.noStroke();
-        p.fill(20);
-        p.ellipse(probe.x, probe.y, 10);
-        p.fill(255);
-        p.ellipse(probe.x, probe.y, 4);
+      const eff = findEffective(pr.x, pr.y, zs);
+      p.noStroke();
+      p.fill(20);
+      p.ellipse(pr.x, pr.y, 10);
+      p.fill(255);
+      p.ellipse(pr.x, pr.y, 4);
 
-        const tx = Math.min(probe.x + 14, W - 170);
-        const ty = Math.max(probe.y - 36, 8);
-        p.fill(20, 220);
-        p.noStroke();
-        p.rect(tx, ty, 162, 50, 4);
-        p.fill(255);
-        p.textAlign(p.LEFT, p.TOP);
-        p.textSize(11);
-        if (eff) {
-          p.text(`Effective n = ${eff.zone.roughness.toFixed(4)}`, tx + 8, ty + 8);
-          p.text(`Winner: Z${eff.index + 1} (P${eff.zone.priority})`, tx + 8, ty + 26);
-        } else {
-          p.text("Outside all zones", tx + 8, ty + 8);
-          p.text("(default roughness)", tx + 8, ty + 26);
-        }
+      const tx = Math.min(pr.x + 14, W - 170);
+      const ty = Math.max(pr.y - 36, 8);
+      p.fill(20, 220);
+      p.noStroke();
+      p.rect(tx, ty, 162, 50, 4);
+      p.fill(255);
+      p.textAlign(p.LEFT, p.TOP);
+      p.textSize(11);
+      if (eff) {
+        p.text(`Effective n = ${eff.zone.roughness.toFixed(4)}`, tx + 8, ty + 8);
+        p.text(`Winner: Z${eff.index + 1} (P${eff.zone.priority})`, tx + 8, ty + 26);
+      } else {
+        p.text("Outside all zones", tx + 8, ty + 8);
+        p.text("(default roughness)", tx + 8, ty + 26);
       }
 
       p.noStroke();
@@ -136,7 +144,8 @@ export default function RoughnessZoneSketch() {
 
     p.mousePressed = () => {
       if (p.mouseX < 0 || p.mouseX > W || p.mouseY < 0 || p.mouseY > H) return;
-      const ordered = zones.map((z, i) => ({ z, i })).sort((a, b) => b.z.priority - a.z.priority);
+      const zs = zonesRef.current;
+      const ordered = zs.map((z, i) => ({ z, i })).sort((a, b) => b.z.priority - a.z.priority);
       for (const { z, i } of ordered) {
         if (Math.hypot(p.mouseX - z.x, p.mouseY - z.y) < z.radius) {
           dragging = i;
@@ -149,17 +158,19 @@ export default function RoughnessZoneSketch() {
 
     p.mouseDragged = () => {
       if (dragging !== null) {
-        const z = zones[dragging];
+        const zs = zonesRef.current;
+        const z = zs[dragging];
         const nx = p.constrain(p.mouseX, z.radius, W - z.radius);
         const ny = p.constrain(p.mouseY, z.radius, H - z.radius);
-        setZones((prev) => prev.map((zz, i) => (i === dragging ? { ...zz, x: nx, y: ny } : zz)));
+        const idx = dragging;
+        setZones((prev) => prev.map((zz, i) => (i === idx ? { ...zz, x: nx, y: ny } : zz)));
       }
     };
 
     p.mouseReleased = () => {
       dragging = null;
     };
-  }, [zones, selectedIdx, probe]);
+  }, []);
 
   return (
     <Card>
@@ -168,7 +179,7 @@ export default function RoughnessZoneSketch() {
           <div>
             <h3 className="font-semibold text-lg">Roughness Zone Priority Editor</h3>
             <p className="text-sm text-muted-foreground">
-              Three roughness zones overlap. Drag with the mouse, or use the keyboard controls below. Click empty space to move the probe; the highest-priority zone at the probe wins.
+              Three roughness zones overlap. Drag with the mouse or use the keyboard controls below. Click empty space to move the probe — the highest-priority zone there wins.
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={reset} data-testid="button-reset-roughness">
@@ -186,12 +197,11 @@ export default function RoughnessZoneSketch() {
         <div
           className="rounded-md border overflow-hidden bg-background flex justify-center"
           role="img"
-          aria-label={`Canvas showing three coloured roughness zones on a grid. Probe at (${probe?.x.toFixed(0) ?? "—"}, ${probe?.y.toFixed(0) ?? "—"}). Effective Manning's n at probe: ${effective ? effective.zone.roughness.toFixed(4) + " from Z" + (effective.index + 1) : "outside all zones (default)"}.`}
+          aria-label={`Canvas showing three overlapping roughness zones. Probe at (${probe.x.toFixed(0)}, ${probe.y.toFixed(0)}). Effective Manning's n: ${effective ? effective.zone.roughness.toFixed(4) + " from Z" + (effective.index + 1) : "outside all zones (default)"}.`}
         >
           <P5Sketch sketch={sketch} data-testid="sketch-roughness" />
         </div>
 
-        {/* Accessible keyboard controls */}
         <div className="rounded-md border p-3 space-y-3" aria-label="Keyboard controls for roughness zones">
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="space-y-1">
@@ -209,47 +219,22 @@ export default function RoughnessZoneSketch() {
               <label className="text-xs font-medium text-muted-foreground">
                 Priority: <span className="font-semibold text-foreground">{selected.priority}</span>
               </label>
-              <Slider
-                value={[selected.priority]}
-                onValueChange={([v]) => updateSelected({ priority: v })}
-                min={1}
-                max={5}
-                step={1}
-                data-testid="slider-priority"
-                aria-label={`Priority of zone ${selectedIdx + 1}`}
-              />
+              <Slider value={[selected.priority]} onValueChange={([v]) => updateSelected({ priority: v })} min={1} max={5} step={1} data-testid="slider-priority" aria-label={`Priority of zone ${selectedIdx + 1}`} />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">
                 Roughness n: <span className="font-semibold text-foreground">{selected.roughness.toFixed(3)}</span>
               </label>
-              <Slider
-                value={[selected.roughness * 1000]}
-                onValueChange={([v]) => updateSelected({ roughness: v / 1000 })}
-                min={10}
-                max={150}
-                step={1}
-                data-testid="slider-roughness"
-                aria-label={`Manning's roughness for zone ${selectedIdx + 1}`}
-              />
+              <Slider value={[selected.roughness * 1000]} onValueChange={([v]) => updateSelected({ roughness: v / 1000 })} min={10} max={150} step={1} data-testid="slider-roughness" aria-label={`Manning's roughness for zone ${selectedIdx + 1}`} />
             </div>
             <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">
                 Radius: <span className="font-semibold text-foreground">{selected.radius}px</span>
               </label>
-              <Slider
-                value={[selected.radius]}
-                onValueChange={([v]) => updateSelected({ radius: v })}
-                min={40}
-                max={160}
-                step={5}
-                data-testid="slider-radius"
-                aria-label={`Radius of zone ${selectedIdx + 1}`}
-              />
+              <Slider value={[selected.radius]} onValueChange={([v]) => updateSelected({ radius: v })} min={40} max={160} step={5} data-testid="slider-radius" aria-label={`Radius of zone ${selectedIdx + 1}`} />
             </div>
           </div>
 
-          {/* Live region for screen readers */}
           <div className="text-xs text-muted-foreground border-t pt-2" aria-live="polite" data-testid="text-state-summary">
             <span className="font-medium text-foreground">Effective roughness at probe: </span>
             {effective

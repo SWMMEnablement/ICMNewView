@@ -2,15 +2,17 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Layers, Droplet, CloudRain, Database, Settings2, BarChart3, ArrowLeft, Sprout } from "lucide-react";
+import { Layers, Droplet, CloudRain, Database, Settings2, BarChart3, ArrowLeft, Sprout, ShieldAlert, Radar } from "lucide-react";
 import RoughnessZoneSketch from "./diagrams/RoughnessZoneSketch";
 import MeshingEvolutionSketch from "./diagrams/MeshingEvolutionSketch";
 import DesignRainfallSketch from "./diagrams/DesignRainfallSketch";
 import DatabaseArchitectureSketch from "./diagrams/DatabaseArchitectureSketch";
 import PumpStationSketch from "./diagrams/PumpStationSketch";
 import RunoffSketch from "./diagrams/RunoffSketch";
+import BreakingChangesSketch from "./diagrams/BreakingChangesSketch";
+import CapabilityRadarSketch from "./diagrams/CapabilityRadarSketch";
 
-type DiagramId = "roughness" | "meshing" | "rainfall" | "database" | "pump" | "runoff";
+type DiagramId = "roughness" | "meshing" | "rainfall" | "database" | "pump" | "runoff" | "breaking" | "radar";
 
 interface DiagramMeta {
   id: DiagramId;
@@ -72,6 +74,23 @@ const DIAGRAMS: DiagramMeta[] = [
     color: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
     available: true,
   },
+  {
+    id: "breaking",
+    title: "Breaking Changes & Migration Risk",
+    blurb: "Curated timeline of changes that bite upgrade planners — Ruby jumps, licensing shifts, DB format changes — with severity and mitigation steps.",
+    icon: ShieldAlert,
+    color: "bg-red-500/10 text-red-700 dark:text-red-300",
+    available: true,
+    badge: "Upgrade planning",
+  },
+  {
+    id: "radar",
+    title: "Capability Growth Radar",
+    blurb: "8-axis radar of cumulative features per modelling domain. Scrub or animate across 48 versions to see where investment landed.",
+    icon: Radar,
+    color: "bg-violet-500/10 text-violet-700 dark:text-violet-300",
+    available: true,
+  },
 ];
 
 export default function DiagramsPlaceholder() {
@@ -102,6 +121,8 @@ export default function DiagramsPlaceholder() {
           {active.id === "database" && <DatabaseArchitectureSketch />}
           {active.id === "pump" && <PumpStationSketch />}
           {active.id === "runoff" && <RunoffSketch />}
+          {active.id === "breaking" && <BreakingChangesSketch />}
+          {active.id === "radar" && <CapabilityRadarSketch />}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">

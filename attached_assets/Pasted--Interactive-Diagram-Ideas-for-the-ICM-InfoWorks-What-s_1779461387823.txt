@@ -1,0 +1,191 @@
+# Interactive Diagram Ideas for the ICM InfoWorks "What's New" App
+
+Given that you're tracking **809 features across 48 versions** for an engineering audience that needs to plan upgrades, train teams, and understand product evolution, here's what I think would be most impactful:
+
+---
+
+## 1. 🕸️ Feature Dependency / Evolution Map
+
+**What it is:** A node-graph diagram showing how features evolved from their origin to their current form. Each feature is a node; edges show "this feature was the prerequisite for" or "this feature was replaced/superseded by."
+
+**Why it's useful:**
+- "If I want to use Subgrid Sampling in 2026.3, what was added in 2021.4 (Roughness Definitions) and 2023.2 (Priority-Based Meshing) that it builds on?"
+- Helps users understand the *why* behind features, not just the *what*
+
+**Example interactions:**
+- Click a node → see full description, which version introduced it, and what depends on it
+- Highlight a path from "first introduced" to "current state"
+- Filter by domain (2D, 1D, Water Quality, SWMM, etc.)
+
+---
+
+## 2. 📈 Capability Growth Radar Chart
+
+**What it is:** A multi-axis radar/spider chart where each axis represents a modeling domain (1D Hydraulics, 2D Surface, Water Quality, SWMM, River Modeling, Cloud, Scripting/Automation, GIS Integration, etc.). Each version is a polygon overlaid on the chart, showing capability growth over time.
+
+**Why it's useful:**
+- Instantly shows **where Autodesk has been investing** — was 2024 the "cloud year"? Was 2021 the "water quality year"?
+- Users can compare their own priorities against the product's growth trajectory
+- Great for management presentations justifying upgrades
+
+**Example interactions:**
+- Slider to scrub through versions and watch the radar expand
+- Toggle individual domains on/off
+- Click an axis to see which specific features contributed to that domain's score
+
+---
+
+## 3. 🗺️ Domain Heatmap Timeline
+
+**What it is:** A matrix heatmap where:
+- **X-axis** = versions (chronological)
+- **Y-axis** = feature domains/categories (2D Meshing, Cloud, SWMM, Rainfall, Results, Scripting, etc.)
+- **Color intensity** = number of features added in that domain in that version
+
+**Why it's useful:**
+- At a glance, you can see "oh, they went heavy on cloud features in 2024.0-2025.5, then pivoted to meshing improvements in 2026.x"
+- Identifies gaps — "has scripting been neglected since version 6.5?"
+- Extremely scannable for power users
+
+**Example interactions:**
+- Hover a cell → tooltip shows the specific features in that domain/version intersection
+- Click a cell → expands to list those features
+- Row/column totals show cumulative counts
+
+---
+
+## 4. 🔀 Version Compare Diff Diagram
+
+**What it is:** A side-by-side or unified diff view, but visual rather than text-based. Two version selectors at the top; the diagram shows features as colored blocks:
+- 🟢 **Green** = features added between version A and version B
+- 🔴 **Red** = features deprecated or changed
+- 🟡 **Yellow** = features modified/enhanced
+- ⚪ **Gray** = unchanged
+
+**Why it's useful:**
+- This is the **single most requested workflow** for anyone planning an upgrade: "What do I gain if I go from 2023.2 to 2026.3?"
+- Currently the app seems to have a "Version Compare" tab but it's unclear how visual it is
+
+**Example interactions:**
+- Two dropdown selectors for "From version" and "To version"
+- Group results by domain with collapsible sections
+- "Export comparison as PDF" for sharing with procurement
+
+---
+
+## 5. 🏗️ Modeling Workflow Pipeline Diagram
+
+**What it is:** A flowchart showing the typical ICM modeling workflow stages:
+```
+Data Import → Network Building → Meshing → Rainfall Setup → Calibration → Simulation → Results Analysis → Reporting
+```
+Each stage is a node. Within each node, features are listed that support that stage, color-coded by which version introduced them.
+
+**Why it's useful:**
+- New users see **where in their workflow** each feature fits
+- Helps answer "I'm stuck at the calibration stage — what tools do I have?"
+- Bridges the gap between "feature list" and "how do I actually use this"
+
+**Example interactions:**
+- Click a workflow stage → expands to show all relevant features across all versions
+- Filter by version range ("what's available to me if I'm on 2024.0?")
+- Link each feature to its detailed description
+
+---
+
+## 6. 🌊 Feature Category Sankey Diagram
+
+**What it is:** A Sankey flow diagram showing:
+- **Left side:** Version groups (e.g., pre-2020, 2020-2022, 2023-2024, 2025-2027)
+- **Right side:** Feature domains
+- **Flows:** Proportion of features in each era that went to each domain
+
+**Why it's useful:**
+- Beautiful and immediately shows **resource allocation shifts** over the product's lifetime
+- Makes a compelling visual for "where is this product heading"
+- Non-engineers (managers, procurement) can understand it instantly
+
+---
+
+## 7. ⏱️ Time-to-Feature Adoption Funnel
+
+**What it is:** For each major feature area, show when the *first* capability appeared and how it matured over subsequent versions. Displayed as a funnel or stepped progression:
+
+```
+SWMM Integration:
+  v10.5 (2019) ──→ 1D only, dynamic wave
+  v2021.8 (2021) ──→ 2D Boundary Objects for SWMM
+  v2022+ ──→ continued enhancements
+```
+
+**Why it's useful:**
+- Shows **feature maturity** — is something still in tech preview or fully production-ready?
+- Helps users decide "is this feature mature enough for my project?"
+
+---
+
+## 8. 🧩 Plugin/Extension Ecosystem Map
+
+**What it is:** A visual showing how ICM connects to external tools and data sources:
+- Esri GIS ↔ ICM
+- PI Web API ↔ ICM
+- EA Rest API ↔ ICM
+- Cloud services ↔ ICM
+- HEC-RAS import
+- 12DA import
+- Ruby scripting ↔ external gems
+
+**Why it's useful:**
+- Many users don't realize the breadth of integrations
+- Helps IT teams assess compatibility with their existing stack
+- Shows the expanding ecosystem over time
+
+---
+
+## 9. 📊 Breaking Changes / Migration Risk Diagram
+
+**What it is:** A timeline that specifically highlights:
+- **Ruby 2.4 → 3.4.6** (2027.0) — scripts may break
+- **Licensing system change** (2023.0) — operational impact
+- **Database format changes** (2023.1 multi-version support)
+- **Version numbering change** (2021.1)
+- **SWMM engine introduction** (10.5) — paradigm shift
+
+Visualized as a risk-colored timeline with severity indicators.
+
+**Why it's useful:**
+- **This is what upgrade planners actually need** — not "what's new" but "what might break"
+- Each breaking change links to migration guidance
+- Could be the most practically valuable diagram on the entire site
+
+---
+
+## 10. 🤖 AI-Powered "Feature Constellation"
+
+**What it is:** A constellation/star map where each feature is a star, grouped into "constellations" by domain. Stars are sized by importance/impact and positioned by version. The AI chat can be queried to highlight paths across the constellation.
+
+**Why it's useful:**
+- Visually stunning and memorable
+- Makes exploring 809 features feel like discovery rather than reading a spreadsheet
+- The spatial clustering naturally reveals patterns
+
+---
+
+## Priority Ranking (What I'd Build First)
+
+| Priority | Diagram | Reason |
+|----------|---------|--------|
+| **🥇 1** | Version Compare Diff | Directly solves the #1 user need |
+| **🥈 2** | Domain Heatmap Timeline | Maximum insight-to-effort ratio |
+| **🥉 3** | Breaking Changes / Migration Risk | Fills a gap nobody else covers |
+| 4 | Feature Dependency Map | Deep value for power users |
+| 5 | Capability Growth Radar | Great for presentations and buy-in |
+| 6 | Modeling Workflow Pipeline | Best for onboarding new users |
+| 7 | Sankey Diagram | Beautiful but lower practical utility |
+| 8 | Time-to-Adoption Funnel | Nice-to-have for maturity tracking |
+| 9 | Ecosystem Map | Valuable but more static |
+| 10 | Feature Constellation | Cool but lower ROI |
+
+---
+
+The **Version Compare Diff** and **Domain Heatmap** would have the highest impact for the least development effort. The **Breaking Changes diagram** would be genuinely unique — I've never seen any software documentation tool do this well, and for an engineering audience planning multi-million dollar model upgrades, it would be invaluable.
